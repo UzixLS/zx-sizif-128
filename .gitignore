@@ -1,10 +1,14 @@
+## Quartus
 db/
 incremental_db/
 output/
 *.dpf
 *.cdf
 *.qws
+
+## Etc.
+pcb/out/
+out/pinouts.docx
 *.bak
 *.*~
 top-old.v
-sizif*.rom
