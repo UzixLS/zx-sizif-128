@@ -77,18 +77,18 @@ localparam H_SYNC_S128    = 32;
 localparam H_BLANK2_S128  = 44;
 localparam H_TOTAL_S128   = H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128 + H_BLANK2_S128 + H_LBORDER_S128;
 localparam V_BBORDER_S128 = 56;
-localparam V_SYNC_S128    = 15;
-localparam V_TBORDER_S128 = 48;
+localparam V_SYNC_S128    = 8;
+localparam V_TBORDER_S128 = 55;
 localparam V_TOTAL_S128   = V_AREA + V_BBORDER_S128 + V_SYNC_S128 + V_TBORDER_S128;
 
-localparam H_LBORDER_PENT = 72 - SCREEN_DELAY;
-localparam H_RBORDER_PENT = 56 + SCREEN_DELAY;
+localparam H_LBORDER_PENT = 64 - SCREEN_DELAY;
+localparam H_RBORDER_PENT = 64 + SCREEN_DELAY;
 localparam H_BLANK1_PENT  = 0;
 localparam H_SYNC_PENT    = 32;
 localparam H_BLANK2_PENT  = 32;
 localparam H_TOTAL_PENT   = H_AREA + H_RBORDER_PENT + H_BLANK1_PENT + H_SYNC_PENT + H_BLANK2_PENT + H_LBORDER_PENT;
-localparam V_BBORDER_PENT = 48;
-localparam V_SYNC_PENT    = 16;
+localparam V_BBORDER_PENT = 56;
+localparam V_SYNC_PENT    = 8;
 localparam V_TBORDER_PENT = 64;
 localparam V_TOTAL_PENT   = V_AREA + V_BBORDER_PENT + V_SYNC_PENT + V_TBORDER_PENT;
 
@@ -96,27 +96,25 @@ reg [`CLOG2(`MAX(V_TOTAL_S128, V_TOTAL_PENT))-1:0] vc;
 reg [`CLOG2(`MAX(H_TOTAL_S128, H_TOTAL_PENT)):0] hc0;
 wire [`CLOG2(`MAX(H_TOTAL_S128, H_TOTAL_PENT))-1:0] hc = hc0[$bits(hc0)-1:1];
 
-wire hc0_reset_s128 = hc0 == (H_TOTAL_S128<<1) - 1'b1;
-wire hc0_reset_pent = hc0 == (H_TOTAL_PENT<<1) - 1'b1;
-wire vc_reset_s128 = vc == V_TOTAL_S128 - 1'b1;
-wire vc_reset_pent = vc == V_TOTAL_PENT - 1'b1;
-wire hsync_s128 = (hc >= (H_AREA + H_RBORDER_S128 + H_BLANK1_S128)) &&
-			      (hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128));
-wire hsync_pent = hc[8:5] == 4'b1010;
-wire vsync_s128 = (vc >= (V_AREA + V_BBORDER_S128)) && (vc < (V_AREA + V_BBORDER_S128 + V_SYNC_S128));
-wire vsync_pent = vc[8:4] == 5'b01111;
-wire blank_s128 = vsync_s128 || ((hc >= (H_AREA + H_RBORDER_S128)) &&
-						        (hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128 + H_BLANK2_S128)));
-wire blank_pent = vsync_pent || hc[8:6] == 3'b101;
-
-wire hc0_reset  = timings? hc0_reset_s128  : hc0_reset_pent;
-wire vc_reset   = timings? vc_reset_s128   : vc_reset_pent;
-wire hsync0     = timings? hsync_s128      : hsync_pent;
-wire vsync0     = timings? vsync_s128      : vsync_pent;
-wire blank      = timings? blank_s128      : blank_pent;
-
-wire screen_load = (vc < V_AREA) && (hc < H_AREA);
-wire screen_show = (vc < V_AREA) && (hc >= SCREEN_DELAY) && (hc < H_AREA + SCREEN_DELAY);
+wire hc0_reset = timings? 
+	hc0 == (H_TOTAL_S128<<1) - 1'b1 :
+	hc0 == (H_TOTAL_PENT<<1) - 1'b1 ;
+wire vc_reset = timings?
+	vc == V_TOTAL_S128 - 1'b1 :
+	vc == V_TOTAL_PENT - 1'b1 ;
+wire hsync0 = timings?
+	(hc >= (H_AREA + H_RBORDER_S128 + H_BLANK1_S128)) &&
+		(hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128)) :
+	(hc[8:5] == 4'b1010);
+wire vsync0 = timings?
+	(vc >= (V_AREA + V_BBORDER_S128)) && (vc < (V_AREA + V_BBORDER_S128 + V_SYNC_S128)) :
+	(vc[7:3] == 5'b11111) ;
+wire blank = timings? 
+	((vc >= (V_AREA + V_BBORDER_S128)) && (vc < (V_AREA + V_BBORDER_S128 + V_SYNC_S128))) ||
+		((hc >= (H_AREA + H_RBORDER_S128)) &&
+		 (hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128 + H_BLANK2_S128))) :
+	((vc[7:3] == 5'b11111) ||
+		(hc[8:6] == 3'b101));
 
 always @(posedge clk14 or negedge rst_n) begin
 	if (!rst_n) begin
@@ -139,11 +137,11 @@ end
 
 reg [3:0] blink_cnt;
 wire blink = blink_cnt[$bits(blink_cnt)-1];
-always @(posedge vc_reset or negedge rst_n) begin
-    if (!rst_n)
-        blink_cnt <= 0;
-    else
-        blink_cnt <= blink_cnt + 1'b1;
+always @(posedge n_int or negedge rst_n) begin
+	if (!rst_n)
+		blink_cnt <= 0;
+	else
+		blink_cnt <= blink_cnt + 1'b1;
 end
 
 reg [7:0] bitmap, attr, bitmap_next, attr_next;
@@ -151,7 +149,7 @@ wire pixel = bitmap[7];
 always @(posedge clk14) begin
 	if (hc0[0]) begin
 		if (blank)
-			{i, g, r, b} <= 4'b0000;
+			{i, g, r, b} = 4'b0000;
 		else begin
 			{g, r, b} = (pixel ^ (attr[7] & blink))? attr[2:0] : attr[5:3];
 			i = (g | r | b) & attr[6];
@@ -166,9 +164,9 @@ wire bitmap_read = screen_read & hc0[0];
 wire [14:0] bitmap_addr = { 2'b10, vc[7:6], vc[2:0], vc[5:3], hc[7:3] };
 wire [14:0] attr_addr = { 5'b10110, vc[7:3], hc[7:3] };
 wire [14:0] screen_addr = attr_read? attr_addr : bitmap_addr;
+wire screen_load = (vc < V_AREA) && (hc < H_AREA);
+wire screen_show = (vc < V_AREA) && (hc >= SCREEN_DELAY) && (hc < H_AREA + SCREEN_DELAY);
 wire screen_update = hc0[3:0] == 4'b1111;
-// wire border_update = (~((screen_load && (hc0[3:0] == 4'b1111)) || (screen_show && (hc0[3:0] != 4'b1110))))
-// 				&& (timings == 0 || hc0[3:0] == 4'b1111);
 wire border_update = ((screen_load == 0 && screen_show == 0) || (screen_load == 0 && hc0[3:0] == 4'b1111) || (screen_show == 0 && timings == 0))
 				&& (timings == 0 || hc0[3:0] == 4'b1111);
 
@@ -201,8 +199,10 @@ always @(posedge clk14 or negedge rst_n) begin
 end
 
 
+wire [15:0] xa = {a15, a14, va[13:2], a1, a0};
+
 /* PORT #FE */
-wire port_fe_cs = n_m1 == 1 && n_iorq0 == 0 && a0 == 0;
+wire port_fe_cs = n_m1 == 1 && n_iorq0 == 0 && xa[0] == 0;
 reg port_fe_rd;
 always @(posedge clk14)
 	port_fe_rd <= port_fe_cs && n_rd == 0;
@@ -221,7 +221,7 @@ end
 
 
 /* PORT #7FFD */
-wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && a1 == 0 && a15 == 0;
+wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && xa[1] == 0 && xa[15] == 0;
 reg [7:0] port_7ffd;
 wire [2:0] rambank = port_7ffd[2:0];
 wire vbank = port_7ffd[3];
@@ -236,16 +236,20 @@ end
 
 
 /* INT GENERATOR */
+localparam INT_V_S48       = 248;
+localparam INT_H_FROM_S48  = 0;
+localparam INT_H_TO_S48    = 63;
 localparam INT_V_S128      = 248;
-localparam INT_H_FROM_S128 = 0;
-localparam INT_H_TO_S128   = 72;
+localparam INT_H_FROM_S128 = 2;
+localparam INT_H_TO_S128   = 65;
 localparam INT_V_PENT      = 239;
-localparam INT_H_FROM_PENT = 312;
+localparam INT_H_FROM_PENT = 320;
 localparam INT_H_TO_PENT   = 384;
-wire n_int_s128 = vc != INT_V_S128 || hc < INT_H_FROM_S128 || hc > INT_H_TO_S128;
-wire n_int_pent = vc != INT_V_PENT || hc < INT_H_FROM_PENT || hc > INT_H_TO_PENT;
-always @(posedge clk14)
-	n_int <= timings? n_int_s128 : n_int_pent;
+always @(posedge clk14) begin
+	n_int <= timings?
+		(vc != INT_V_S128 || hc < INT_H_FROM_S128 || hc > INT_H_TO_S128) : 
+		(vc != INT_V_PENT || hc < INT_H_FROM_PENT || hc > INT_H_TO_PENT) ;
+end
 
 
 /* CLOCK */
@@ -263,8 +267,8 @@ always @(posedge clkcpu or negedge rst_n) begin
 		ay_bdir <= 0;
 	end
 	else begin
-		ay_bc1  <= a15 == 1 && a14 == 1 && a1 == 0 && n_m1 == 1 && n_iorq0 == 0;
-		ay_bdir <= a15 == 1 && a1 == 0 && n_m1 == 1 && n_iorq0 == 0 && n_wr == 0;
+		ay_bc1  <= xa[15] == 1 && xa[14] == 1 && xa[1] == 0 && n_m1 == 1 && n_iorq0 == 0;
+		ay_bdir <= xa[15] == 1 && xa[1] == 0 && n_m1 == 1 && n_iorq0 == 0 && n_wr == 0;
 	end
 end
 assign ay_clk = clk_cnt[2];
@@ -304,21 +308,20 @@ wire n_vcs_cpu = n_mreq | ~(a15 | a14);
 assign n_vrd = ((n_vcs_cpu == 0 && n_rd == 0) || screen_read == 1)? 1'b0 : 1'b1 ;
 assign n_vwr = ((n_vcs_cpu == 0 && n_wr == 0) && screen_read == 0)? 1'b0 : 1'b1;
 always @(posedge clkcpu) begin
-	n_romcs <= n_mreq |   a15 | a14;
+	n_romcs <= n_mreq | a15 | a14;
 end
 
+assign ra14 = rombank;
 
 assign va[16:0] = 
-				  screen_read? {1'b1, vbank, screen_addr} :
-				  a15 & a14? {rambank, {14{1'bz}}} :
-				  {a14, a15, a14, {14{1'bz}}};
+	screen_read? {1'b1, vbank, screen_addr} :
+	a15 & a14? {rambank, {14{1'bz}}} :
+	{a14, a15, a14, {14{1'bz}}};
 
 assign vd[7:0] = 
-				 port_fe_rd? port_fe_data :
-				 n_iorq0 == 0 && n_rd == 0? {8{1'b1}} :
-				 {8{1'bz}};
-
-assign ra14 = rombank;
+	port_fe_rd? port_fe_data :
+	n_iorq0 == 0 && (n_rd == 0 | n_m1 == 0)? {8{1'b1}} :
+	{8{1'bz}};
 
 
 endmodule
