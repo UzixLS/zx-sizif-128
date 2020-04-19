@@ -6,6 +6,15 @@ output/
 *.cdf
 *.qws
 
+## Kicad
+*-lib-table
+*-cache
+*-rescue.lib
+*.sch-bak
+*.kicad_pcb-bak
+*.dcm
+pcb/*.xml
+
 ## Etc.
 pcb/out/
 out/pinouts.docx
