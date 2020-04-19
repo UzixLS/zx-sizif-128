@@ -1,9 +1,10 @@
 db/
 incremental_db/
 output/
+*.dpf
+*.cdf
+*.qws
 *.bak
 *.*~
 top-old.v
-*.dpf
-*.qws
 sizif*.rom
