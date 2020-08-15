@@ -29,7 +29,7 @@ module zx_ula(
 
 	input [4:0] kd,
 	input tape_in,
-	output reg tape_out,
+	output tape_out,
 	output reg beeper,
 
 	output ay_clk,
@@ -177,15 +177,17 @@ reg port_fe_rd;
 always @(posedge clk14)
 	port_fe_rd <= port_fe_cs && n_rd == 0;
 
+reg tape_out0;
+assign tape_out = tape_in ^ tape_out0;
 always @(posedge clk14 or negedge rst_n) begin
 	if (!rst_n) begin
 		beeper <= 0;
-		tape_out <= 0;
+		tape_out0 <= 0;
 		border <= 0;
 	end
 	else if (port_fe_cs && n_wr == 0) begin
 		beeper <= xd[4];
-		tape_out <= xd[3];
+		tape_out0 <= xd[3];
 		border <= xd[2:0];
 	end
 end
