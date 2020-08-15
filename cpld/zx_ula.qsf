@@ -41,7 +41,7 @@ set_global_assignment -name DEVICE "EPM7128SLC84-15"
 set_global_assignment -name TOP_LEVEL_ENTITY zx_ula
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "9.0 SP2"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "08:15:12  APRIL 28, 2019"
-set_global_assignment -name LAST_QUARTUS_VERSION "9.0 SP2"
+set_global_assignment -name LAST_QUARTUS_VERSION "13.0 SP1"
 set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id eda_blast_fpga
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 15
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
@@ -92,7 +92,7 @@ set_location_assignment PIN_49 -to vd[1]
 set_location_assignment PIN_50 -to vd[0]
 set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2005
 set_global_assignment -name VERILOG_SHOW_LMF_MAPPING_MESSAGES OFF
-set_global_assignment -name MAX7000_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name MAX7000_OPTIMIZATION_TECHNIQUE BALANCED
 set_global_assignment -name FMAX_REQUIREMENT "14 MHz"
 set_global_assignment -name FMAX_REQUIREMENT "14 MHz" -section_id clk14
 set_location_assignment PIN_6 -to i
@@ -130,6 +130,8 @@ set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name FIT_ONLY_ONE_ATTEMPT OFF
 set_global_assignment -name SLOW_SLEW_RATE OFF
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output/
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
+set_global_assignment -name SDC_FILE clocks.sdc
 set_global_assignment -name VHDL_FILE chroma_gen16.vhd
 set_global_assignment -name VERILOG_FILE top.v
 set_global_assignment -name VERILOG_INCLUDE_FILE util.vh

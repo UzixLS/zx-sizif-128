@@ -29,8 +29,8 @@ module zx_ula(
 
 	input [4:0] kd,
 	input tape_in,
-	output tape_out,
-	output beeper,
+	output reg tape_out,
+	output reg beeper,
 
 	output ay_clk,
 	output reg ay_bdir,
@@ -44,9 +44,8 @@ module zx_ula(
 	output reg csync
 );
 
-wire timings = 0;
-wire turbo = 0;
-wire [2:0] border;
+wire [15:0] xa = {a15, a14, va[13:2], a1, a0};
+wire [7:0] xd = vd;
 
 reg n_iorq_delayed;
 always @(posedge clkcpu)
@@ -58,70 +57,25 @@ wire n_iorq0 = n_iorq | n_iorq_delayed;
 localparam H_AREA         = 256;
 localparam V_AREA         = 192;
 localparam SCREEN_DELAY   = 8;
+localparam H_TOTAL        = 448;
+localparam V_TOTAL        = 320;
 
-localparam H_LBORDER_S48  = 32 - SCREEN_DELAY;
-localparam H_RBORDER_S48  = 64 + SCREEN_DELAY;
-localparam H_BLANK1_S48   = 16;
-localparam H_SYNC_S48     = 32;
-localparam H_BLANK2_S48   = 48;
-localparam H_TOTAL_S48    = H_AREA + H_RBORDER_S48 + H_BLANK1_S48 + H_SYNC_S48 + H_BLANK2_S48 + H_LBORDER_S48;
-localparam V_BBORDER_S48  = 56;
-localparam V_SYNC_S48     = 8;
-localparam V_TBORDER_S48  = 56;
-localparam V_TOTAL_S48    = V_AREA + V_BBORDER_S48 + V_SYNC_S48 + V_TBORDER_S48;
+reg [`CLOG2(V_TOTAL)-1:0] vc;
+reg [`CLOG2(H_TOTAL):0] hc0;
+wire [`CLOG2(H_TOTAL)-1:0] hc = hc0[$bits(hc0)-1:1];
 
-localparam H_LBORDER_S128 = 48 - SCREEN_DELAY;
-localparam H_RBORDER_S128 = 48 + SCREEN_DELAY;
-localparam H_BLANK1_S128  = 28;
-localparam H_SYNC_S128    = 32;
-localparam H_BLANK2_S128  = 44;
-localparam H_TOTAL_S128   = H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128 + H_BLANK2_S128 + H_LBORDER_S128;
-localparam V_BBORDER_S128 = 56;
-localparam V_SYNC_S128    = 8;
-localparam V_TBORDER_S128 = 55;
-localparam V_TOTAL_S128   = V_AREA + V_BBORDER_S128 + V_SYNC_S128 + V_TBORDER_S128;
+wire hc0_reset = hc0 == (H_TOTAL<<1) - 1'b1 ;
+wire vc_reset = vc == V_TOTAL - 1'b1 ;
+wire hsync0 = hc[8:5] == 4'b1010;
+wire vsync0 = vc[7:3] == 5'b11111;
+wire blank = (vc[7:3] == 5'b11111) || (hc[8:6] == 3'b101);
 
-localparam H_LBORDER_PENT = 64 - SCREEN_DELAY;
-localparam H_RBORDER_PENT = 64 + SCREEN_DELAY;
-localparam H_BLANK1_PENT  = 0;
-localparam H_SYNC_PENT    = 32;
-localparam H_BLANK2_PENT  = 32;
-localparam H_TOTAL_PENT   = H_AREA + H_RBORDER_PENT + H_BLANK1_PENT + H_SYNC_PENT + H_BLANK2_PENT + H_LBORDER_PENT;
-localparam V_BBORDER_PENT = 56;
-localparam V_SYNC_PENT    = 8;
-localparam V_TBORDER_PENT = 64;
-localparam V_TOTAL_PENT   = V_AREA + V_BBORDER_PENT + V_SYNC_PENT + V_TBORDER_PENT;
+reg hsync1;
+always @(posedge clk14)
+	hsync1 = hc[8:5] != 4'b1010;
 
-reg [`CLOG2(`MAX(V_TOTAL_S128, V_TOTAL_PENT))-1:0] vc;
-reg [`CLOG2(`MAX(H_TOTAL_S128, H_TOTAL_PENT)):0] hc0;
-wire [`CLOG2(`MAX(H_TOTAL_S128, H_TOTAL_PENT))-1:0] hc = hc0[$bits(hc0)-1:1];
-
-wire hc0_reset = timings? 
-	hc0 == (H_TOTAL_S128<<1) - 1'b1 :
-	hc0 == (H_TOTAL_PENT<<1) - 1'b1 ;
-wire vc_reset = timings?
-	vc == V_TOTAL_S128 - 1'b1 :
-	vc == V_TOTAL_PENT - 1'b1 ;
-wire hsync0 = timings?
-	(hc >= (H_AREA + H_RBORDER_S128 + H_BLANK1_S128)) &&
-		(hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128)) :
-	(hc[8:5] == 4'b1010);
-wire vsync0 = timings?
-	(vc >= (V_AREA + V_BBORDER_S128)) && (vc < (V_AREA + V_BBORDER_S128 + V_SYNC_S128)) :
-	(vc[7:3] == 5'b11111) ;
-wire blank = timings? 
-	((vc >= (V_AREA + V_BBORDER_S128)) && (vc < (V_AREA + V_BBORDER_S128 + V_SYNC_S128))) ||
-		((hc >= (H_AREA + H_RBORDER_S128)) &&
-		 (hc <  (H_AREA + H_RBORDER_S128 + H_BLANK1_S128 + H_SYNC_S128 + H_BLANK2_S128))) :
-	((vc[7:3] == 5'b11111) ||
-		(hc[8:6] == 3'b101));
-
-always @(posedge clk14 or negedge rst_n) begin
-	if (!rst_n) begin
-		hc0 <= 0;
-		vc <= 0;
-	end
-	else if (hc0_reset) begin
+always @(posedge clk14) begin
+	if (hc0_reset) begin
 		hc0 <= 0;
 		if (vc_reset) begin
 			vc <= 0;
@@ -135,7 +89,7 @@ always @(posedge clk14 or negedge rst_n) begin
 	end
 end
 
-reg [3:0] blink_cnt;
+reg [4:0] blink_cnt;
 wire blink = blink_cnt[$bits(blink_cnt)-1];
 always @(posedge n_int or negedge rst_n) begin
 	if (!rst_n)
@@ -144,20 +98,8 @@ always @(posedge n_int or negedge rst_n) begin
 		blink_cnt <= blink_cnt + 1'b1;
 end
 
+reg [2:0] border;
 reg [7:0] bitmap, attr, bitmap_next, attr_next;
-wire pixel = bitmap[7];
-always @(posedge clk14) begin
-	if (hc0[0]) begin
-		if (blank)
-			{i, g, r, b} = 4'b0000;
-		else begin
-			{g, r, b} = (pixel ^ (attr[7] & blink))? attr[2:0] : attr[5:3];
-			i = (g | r | b) & attr[6];
-		end
-		csync <= ~(vsync0 ^ hsync0);
-	end
-end
-
 reg screen_read;
 wire attr_read = screen_read & ~hc0[0];
 wire bitmap_read = screen_read & hc0[0];
@@ -167,8 +109,7 @@ wire [14:0] screen_addr = attr_read? attr_addr : bitmap_addr;
 wire screen_load = (vc < V_AREA) && (hc < H_AREA);
 wire screen_show = (vc < V_AREA) && (hc >= SCREEN_DELAY) && (hc < H_AREA + SCREEN_DELAY);
 wire screen_update = hc0[3:0] == 4'b1111;
-wire border_update = ((screen_load == 0 && screen_show == 0) || (screen_load == 0 && hc0[3:0] == 4'b1111) || (screen_show == 0 && timings == 0))
-				&& (timings == 0 || hc0[3:0] == 4'b1111);
+wire border_update = (screen_load == 0 && hc0[3:0] == 4'b1111) || (screen_show == 0);
 
 always @(posedge clk14 or negedge rst_n) begin
 	if (!rst_n) begin
@@ -198,66 +139,76 @@ always @(posedge clk14 or negedge rst_n) begin
 	end
 end
 
-
-wire [15:0] xa = {a15, a14, va[13:2], a1, a0};
-
-/* PORT #FE */
-wire port_fe_cs = n_m1 == 1 && n_iorq0 == 0 && xa[0] == 0;
-reg port_fe_rd;
-always @(posedge clk14)
-	port_fe_rd <= port_fe_cs && n_rd == 0;
-
-wire [7:0] port_fe_data = {1'b1, tape_in, 1'b1, kd[4:0]};
-reg [7:0] port_fe;
-assign beeper = port_fe[4];
-assign tape_out = port_fe[3] ^ tape_in;
-assign border = port_fe[2:0];
-always @(posedge clk14 or negedge rst_n) begin
-	if (!rst_n)
-		port_fe <= 0;
-	else if (port_fe_cs && n_wr == 0)
-		port_fe <= vd;
-end
-
-
-/* PORT #7FFD */
-wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && xa[1] == 0 && xa[15] == 0;
-reg [7:0] port_7ffd;
-wire [2:0] rambank = port_7ffd[2:0];
-wire vbank = port_7ffd[3];
-wire rombank = port_7ffd[4];
-wire lock_7ffd = port_7ffd[5];
-always @(posedge clk14 or negedge rst_n) begin
-	if (!rst_n)
-		port_7ffd <= 0;
-	else if (port_7ffd_cs && n_wr == 0 && lock_7ffd == 0)
-		port_7ffd <= vd;
-end
-
-
-/* INT GENERATOR */
-localparam INT_V_S48       = 248;
-localparam INT_H_FROM_S48  = 0;
-localparam INT_H_TO_S48    = 63;
-localparam INT_V_S128      = 248;
-localparam INT_H_FROM_S128 = 2;
-localparam INT_H_TO_S128   = 65;
-localparam INT_V_PENT      = 239;
-localparam INT_H_FROM_PENT = 320;
-localparam INT_H_TO_PENT   = 384;
+wire pixel = bitmap[7];
 always @(posedge clk14) begin
-	n_int <= timings?
-		(vc != INT_V_S128 || hc < INT_H_FROM_S128 || hc > INT_H_TO_S128) : 
-		(vc != INT_V_PENT || hc < INT_H_FROM_PENT || hc > INT_H_TO_PENT) ;
+	if (hc0[0]) begin
+		if (blank)
+			{i, g, r, b} = 4'b0000;
+		else begin
+			{g, r, b} = (pixel ^ (attr[7] & blink))? attr[2:0] : attr[5:3];
+			i = (g | r | b) & attr[6];
+		end
+		csync <= ~(vsync0 ^ hsync0);
+	end
 end
 
 
 /* CLOCK */
-reg [2:0] clk_cnt;
-always @(posedge clk14) begin
-	clk_cnt <= clk_cnt + 1'b1;
+assign clkcpu = hc[0];
+
+
+/* INT GENERATOR */
+localparam INT_V      = 239;
+localparam INT_H_FROM = 318;
+localparam INT_H_TO   = 382;
+always @(posedge clk14 or negedge rst_n) begin
+	if (!rst_n)
+		n_int <= 1;
+	else
+		n_int <= vc != INT_V || hc < INT_H_FROM || hc > INT_H_TO ;
 end
-assign clkcpu = turbo? clk_cnt[0] : clk_cnt[1];
+
+
+/* PORT #FE */
+wire port_fe_cs = n_m1 == 1 && n_iorq0 == 0 && xa[0] == 0;
+
+wire [7:0] port_fe_data = {1'b1, tape_in, 1'b1, kd[4:0]};
+reg port_fe_rd;
+always @(posedge clk14)
+	port_fe_rd <= port_fe_cs && n_rd == 0;
+
+always @(posedge clk14 or negedge rst_n) begin
+	if (!rst_n) begin
+		beeper <= 0;
+		tape_out <= 0;
+		border <= 0;
+	end
+	else if (port_fe_cs && n_wr == 0) begin
+		beeper <= xd[4];
+		tape_out <= xd[3];
+		border <= xd[2:0];
+	end
+end
+
+
+/* PORT #7FFD */
+wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && xa[1] == 0 && xa[15] == 0 && xa[14] == 1;
+reg [2:0] rambank;
+reg rombank, vbank, lock_7ffd;
+always @(posedge clk14 or negedge rst_n) begin
+	if (!rst_n) begin
+		rambank <= 0;
+		vbank <= 0;
+		rombank <= 0;
+		lock_7ffd <= 0;
+	end
+	else if (port_7ffd_cs && n_wr == 0 && lock_7ffd == 0) begin
+		rambank <= xd[2:0];
+		vbank <= xd[3];
+		rombank <= xd[4];
+		lock_7ffd <= xd[5];
+	end
+end
 
 
 /* AY */
@@ -271,7 +222,7 @@ always @(posedge clkcpu or negedge rst_n) begin
 		ay_bdir <= xa[15] == 1 && xa[1] == 0 && n_m1 == 1 && n_iorq0 == 0 && n_wr == 0;
 	end
 end
-assign ay_clk = clk_cnt[2];
+assign ay_clk = hc[1];
 
 
 /* VIDEO */
@@ -279,7 +230,7 @@ reg [2:0] chroma0;
 chroma_gen chroma_gen1(
 	.cg_clock(clk16),
 	.cg_rgb({g,r,b}),
-	.cg_hsync(~hsync0),
+	.cg_hsync(hsync1),
 	.cg_enable(1'b1),
 	.cg_pnsel(1'b0),
 	.cg_out(chroma0)
@@ -305,7 +256,7 @@ assign chroma[1] = chroma0[2]? chroma0[0] : 1'bz;
 //    1   00       1   rom1
 
 wire n_vcs_cpu = n_mreq | ~(a15 | a14);
-assign n_vrd = ((n_vcs_cpu == 0 && n_rd == 0) || screen_read == 1)? 1'b0 : 1'b1 ;
+assign n_vrd = ((n_vcs_cpu == 0 && n_rd == 0) || screen_read == 1)? 1'b0 : 1'b1;
 assign n_vwr = ((n_vcs_cpu == 0 && n_wr == 0) && screen_read == 0)? 1'b0 : 1'b1;
 always @(posedge clkcpu) begin
 	n_romcs <= n_mreq | a15 | a14;

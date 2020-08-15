@@ -9,7 +9,7 @@ Specifications:
 - PAL encoder in CPLD
 - Intended to build on 9x15 prototyping board, but may be built on manufactured PCB
 
-To modify and compile CPLD firmware you need Quartus 9.0 SP2.
+To modify and compile CPLD firmware you need Quartus 13.0sp1.
 To modify schematic and pcb you need Kicad 5.1.4 or newer.
 
 [Some photos](https://cloud.err200.net/index.php/s/73TR85tYZkMm8Ax?path=%2Fsizif-128)
