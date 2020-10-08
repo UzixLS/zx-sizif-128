@@ -134,4 +134,3 @@ set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
 set_global_assignment -name SDC_FILE clocks.sdc
 set_global_assignment -name VHDL_FILE chroma_gen16.vhd
 set_global_assignment -name VERILOG_FILE top.v
-set_global_assignment -name VERILOG_INCLUDE_FILE util.vh

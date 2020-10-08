@@ -1,5 +1,3 @@
-`include "util.vh"
-
 module zx_ula(
 	input rst_n,
 	input clk14,
@@ -60,9 +58,9 @@ localparam SCREEN_DELAY   = 8;
 localparam H_TOTAL        = 448;
 localparam V_TOTAL        = 320;
 
-reg [`CLOG2(V_TOTAL)-1:0] vc;
-reg [`CLOG2(H_TOTAL):0] hc0;
-wire [`CLOG2(H_TOTAL)-1:0] hc = hc0[$bits(hc0)-1:1];
+reg [$clog2(V_TOTAL)-1:0] vc;
+reg [$clog2(H_TOTAL):0] hc0;
+wire [$clog2(H_TOTAL)-1:0] hc = hc0[$bits(hc0)-1:1];
 
 wire hc0_reset = hc0 == (H_TOTAL<<1) - 1'b1 ;
 wire vc_reset = vc == V_TOTAL - 1'b1 ;
