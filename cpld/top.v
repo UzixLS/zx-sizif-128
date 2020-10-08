@@ -23,7 +23,7 @@ module zx_ula(
 
 	output n_vrd,
 	output n_vwr,
-	output reg n_romcs,
+	output n_romcs,
 
 	input [4:0] kd,
 	input tape_in,
@@ -42,13 +42,11 @@ module zx_ula(
 	output reg csync
 );
 
-wire [15:0] xa = {a15, a14, va[13:2], a1, a0};
+wire [15:0] xa = {a15, a14, va[13:2], a1, a0}; // a1-va[1] and a0-va[0] may be swapped if fitter is cranky
 wire [7:0] xd = vd;
 
-reg n_iorq_delayed;
-always @(posedge clkcpu)
-	n_iorq_delayed <= n_iorq;
-wire n_iorq0 = n_iorq | n_iorq_delayed;
+reg screen_read;
+wire n_iorq0 = n_iorq | screen_read;
 
 
 /* SCREEN CONTROLLER */
@@ -64,13 +62,6 @@ wire [$clog2(H_TOTAL)-1:0] hc = hc0[$bits(hc0)-1:1];
 
 wire hc0_reset = hc0 == (H_TOTAL<<1) - 1'b1 ;
 wire vc_reset = vc == V_TOTAL - 1'b1 ;
-wire hsync0 = hc[8:5] == 4'b1010;
-wire vsync0 = vc[7:3] == 5'b11111;
-wire blank = (vc[7:3] == 5'b11111) || (hc[8:6] == 3'b101);
-
-reg hsync1;
-always @(posedge clk14)
-	hsync1 = hc[8:5] != 4'b1010;
 
 always @(posedge clk14) begin
 	if (hc0_reset) begin
@@ -98,16 +89,15 @@ end
 
 reg [2:0] border;
 reg [7:0] bitmap, attr, bitmap_next, attr_next;
-reg screen_read;
+wire pixel = bitmap[7];
 wire attr_read = screen_read & ~hc0[0];
 wire bitmap_read = screen_read & hc0[0];
 wire [14:0] bitmap_addr = { 2'b10, vc[7:6], vc[2:0], vc[5:3], hc[7:3] };
 wire [14:0] attr_addr = { 5'b10110, vc[7:3], hc[7:3] };
-wire [14:0] screen_addr = attr_read? attr_addr : bitmap_addr;
-wire screen_load = (vc < V_AREA) && (hc < H_AREA);
+wire [14:0] screen_addr = bitmap_read? bitmap_addr : attr_addr;
 wire screen_show = (vc < V_AREA) && (hc >= SCREEN_DELAY) && (hc < H_AREA + SCREEN_DELAY);
-wire screen_update = hc0[3:0] == 4'b1111;
-wire border_update = (screen_load == 0 && hc0[3:0] == 4'b1111) || (screen_show == 0);
+wire screen_update = (vc < V_AREA) && (hc < H_AREA) && hc0[3:0] == 4'b1111;
+wire border_update = (hc0[3:0] == 4'b1111) || (screen_show == 0);
 
 always @(posedge clk14 or negedge rst_n) begin
 	if (!rst_n) begin
@@ -118,53 +108,56 @@ always @(posedge clk14 or negedge rst_n) begin
 		bitmap_next <= 0;
 	end
 	else begin
-		screen_read <= screen_load && (n_mreq == 1 && n_iorq == 1);
+		screen_read <= n_mreq == 1'b1 && n_iorq == 1'b1;
 
 		if (attr_read)
 			attr_next <= vd;
 		if (bitmap_read)
 			bitmap_next <= vd;
 
-		if (screen_load && screen_update)
+		if (screen_update)
 			attr <= attr_next;
 		else if (border_update)
-			attr <= {2'b00, border, 3'b000};
-		
-		if (screen_load && screen_update)
-			bitmap <= bitmap_next;
+			attr[7:3] <= {2'b00, border};
+
+		if (screen_update)
+			bitmap <= {bitmap_next[7] ^ (attr_next[7] & blink), bitmap_next[6:0]};
 		else if (hc0[0])
-			bitmap <= {bitmap[6:0], 1'b0};
+			bitmap <= {bitmap[6] ^ (attr[7] & blink), bitmap[5:0], 1'b0};
 	end
 end
 
-wire pixel = bitmap[7];
-always @(posedge clk14) begin
-	if (hc0[0]) begin
-		if (blank)
-			{i, g, r, b} = 4'b0000;
-		else begin
-			{g, r, b} = (pixel ^ (attr[7] & blink))? attr[2:0] : attr[5:3];
-			i = (g | r | b) & attr[6];
-		end
-		csync <= ~(vsync0 ^ hsync0);
+
+/* VIDEO OUTPUT */
+// blank range: [320-400)
+wire blank = (vc[7:4] == 4'b1111) || (hc[8:6] == 3'b101) || (hc[8:4] == 5'b11000);
+always @(posedge clk14) if (hc0[0]) begin
+	if (blank)
+		{g, r, b, i} = 4'b0000;
+	else begin
+		{g, r, b} = pixel? attr[2:0] : attr[5:3];
+		i = (g | r | b) & attr[6];
 	end
 end
+
+// hsync range: [328-360)
+wire hsync0 = hc[8:5] == 4'b1010;
+wire vsync0 = vc[7:3] == 5'b11111;
+reg hsync1;
+always @(posedge clk14) if (hc[3]) begin
+	csync <= ~(vsync0 ^ hsync0);
+	hsync1 <= ~hsync0;
+end
+
+
+/* INT GENERATOR */
+always @(posedge clk14)
+	n_int <= ~(vc == 239 && hc[8:6] == 3'b101);
+
 
 
 /* CLOCK */
 assign clkcpu = hc[0];
-
-
-/* INT GENERATOR */
-localparam INT_V      = 239;
-localparam INT_H_FROM = 318;
-localparam INT_H_TO   = 382;
-always @(posedge clk14 or negedge rst_n) begin
-	if (!rst_n)
-		n_int <= 1;
-	else
-		n_int <= vc != INT_V || hc < INT_H_FROM || hc > INT_H_TO ;
-end
 
 
 /* PORT #FE */
@@ -212,7 +205,7 @@ end
 
 
 /* AY */
-always @(posedge clkcpu or negedge rst_n) begin
+always @(posedge clk14 or negedge rst_n) begin
 	if (!rst_n) begin
 		ay_bc1 <= 0;
 		ay_bdir <= 0;
@@ -258,9 +251,7 @@ assign chroma[1] = chroma0[2]? chroma0[0] : 1'bz;
 wire n_vcs_cpu = n_mreq | ~(a15 | a14);
 assign n_vrd = ((n_vcs_cpu == 0 && n_rd == 0) || screen_read == 1)? 1'b0 : 1'b1;
 assign n_vwr = ((n_vcs_cpu == 0 && n_wr == 0) && screen_read == 0)? 1'b0 : 1'b1;
-always @(posedge clkcpu) begin
-	n_romcs <= n_mreq | a15 | a14;
-end
+assign n_romcs = n_mreq | a15 | a14;
 
 assign ra14 = rombank;
 
