@@ -3,7 +3,7 @@ export PATH:=/opt/modelsim201/modelsim_ase/bin:/cygdrive/c/Hwdev/modelsim181/mod
 all: testbench_zx_ula
 
 testbench_zx_ula: VSIMFLAGS+=+nowarn3722 +nowarn8822 +nowarn3017 +nowarn3155
-testbench_zx_ula: V=$@.v ../cpld/chroma_gen16.vhd
+testbench_zx_ula: V=$@.v ../cpld/chroma_gen.v
 
 testbench_memcontroller: V=testbench_memcontroller.v
 

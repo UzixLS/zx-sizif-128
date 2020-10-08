@@ -227,7 +227,7 @@ assign ay_clk = hc[1];
 
 /* VIDEO */
 reg [2:0] chroma0;
-chroma_gen chroma_gen1(
+chroma_gen #(.CLK_FREQ(16_000_000)) chroma_gen1(
 	.cg_clock(clk16),
 	.cg_rgb({g,r,b}),
 	.cg_hsync(hsync1),
