@@ -80,11 +80,8 @@ end
 
 reg [4:0] blink_cnt;
 wire blink = blink_cnt[$bits(blink_cnt)-1];
-always @(posedge n_int or negedge rst_n) begin
-	if (!rst_n)
-		blink_cnt <= 0;
-	else
-		blink_cnt <= blink_cnt + 1'b1;
+always @(posedge n_int) begin
+	blink_cnt <= blink_cnt + 1'b1;
 end
 
 reg [2:0] border;
@@ -99,32 +96,23 @@ wire screen_show = (vc < V_AREA) && (hc >= SCREEN_DELAY) && (hc < H_AREA + SCREE
 wire screen_update = (vc < V_AREA) && (hc < H_AREA) && hc0[3:0] == 4'b1111;
 wire border_update = (hc0[3:0] == 4'b1111) || (screen_show == 0);
 
-always @(posedge clk14 or negedge rst_n) begin
-	if (!rst_n) begin
-		screen_read <= 0;
-		attr <= 0;
-		bitmap <= 0;
-		attr_next <= 0;
-		bitmap_next <= 0;
-	end
-	else begin
-		screen_read <= n_mreq == 1'b1 && n_iorq == 1'b1;
+always @(posedge clk14) begin
+	screen_read <= n_mreq == 1'b1 && n_iorq == 1'b1;
 
-		if (attr_read)
-			attr_next <= vd;
-		if (bitmap_read)
-			bitmap_next <= vd;
+	if (attr_read)
+		attr_next <= vd;
+	if (bitmap_read)
+		bitmap_next <= vd;
 
-		if (screen_update)
-			attr <= attr_next;
-		else if (border_update)
-			attr[7:3] <= {2'b00, border};
+	if (screen_update)
+		attr <= attr_next;
+	else if (border_update)
+		attr[7:3] <= {2'b00, border};
 
-		if (screen_update)
-			bitmap <= {bitmap_next[7] ^ (attr_next[7] & blink), bitmap_next[6:0]};
-		else if (hc0[0])
-			bitmap <= {bitmap[6] ^ (attr[7] & blink), bitmap[5:0], 1'b0};
-	end
+	if (screen_update)
+		bitmap <= {bitmap_next[7] ^ (attr_next[7] & blink), bitmap_next[6:0]};
+	else if (hc0[0])
+		bitmap <= {bitmap[6] ^ (attr[7] & blink), bitmap[5:0], 1'b0};
 end
 
 
@@ -153,7 +141,6 @@ end
 /* INT GENERATOR */
 always @(posedge clk14)
 	n_int <= ~(vc == 239 && hc[8:6] == 3'b101);
-
 
 
 /* CLOCK */
