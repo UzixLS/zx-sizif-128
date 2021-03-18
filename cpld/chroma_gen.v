@@ -20,7 +20,10 @@ localparam CARRIER_WIDTH =
     (CLK_FREQ == 24_000_000)? 17 :
     (CLK_FREQ == 25_000_000)? 16 :
     (CLK_FREQ == 28_000_000)? 18 :
+    (CLK_FREQ == 28_375_000)? 16 :
+    (CLK_FREQ == 28_636_360)? 18 :
     (CLK_FREQ == 32_000_000)? 15 :
+    (CLK_FREQ == 35_468_950)? 3 :
     (CLK_FREQ == 40_000_000)? 15 :
     0;
 localparam PAL_CARRIER =
@@ -32,7 +35,10 @@ localparam PAL_CARRIER =
     (CLK_FREQ == 24_000_000)? 48427 : // 5.51 error
     (CLK_FREQ == 25_000_000)? 23245 : // 13.14 error
     (CLK_FREQ == 28_000_000)? 83018 : // 20.78 error
+    (CLK_FREQ == 28_375_000)? 20480 : // 25 error
+    (CLK_FREQ == 28_636_360)? 81173 : // 11.76 error
     (CLK_FREQ == 32_000_000)? 9080 :  // 25 error
+    (CLK_FREQ == 35_468_950)? 2 :     // 0 error
     (CLK_FREQ == 40_000_000)? 7264 :  // 25 error
     0;
 localparam NTSC_CARRIER =
@@ -44,7 +50,10 @@ localparam NTSC_CARRIER =
     (CLK_FREQ == 24_000_000)? 39098 : // 16.19 error
     (CLK_FREQ == 25_000_000)? 18767 : // 23.82 error
     (CLK_FREQ == 28_000_000)? 67025 : // 23.82 error
+    (CLK_FREQ == 28_375_000)? 16535 : // 19.1 error
+    (CLK_FREQ == 28_636_360)? 65536 : // 0 error
     (CLK_FREQ == 32_000_000)? 7331 :  // 44.84 error
+    (CLK_FREQ == 35_468_950)? 2 :     // 0 error (NTSC4.43)
     (CLK_FREQ == 40_000_000)? 5865 :  // 166.91 error
     0;
 
