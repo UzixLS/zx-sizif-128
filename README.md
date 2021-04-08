@@ -1,4 +1,8 @@
+## Sizif-128
+
 Easy-to-build minimalistic ZX Spectrum clone.
+
+[![photo](images/revB.small.jpg)](images/revB.jpg?raw=true)
 
 Specifications:
 - CPLD EPM7128SLC84 (128 macrocells)
