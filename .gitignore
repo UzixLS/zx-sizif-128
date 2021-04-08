@@ -22,6 +22,8 @@ cpld_tb.*/
 *.sch-bak
 *.kicad_pcb-bak
 *.dcm
+*.kicad_prl
+pcb/**/*-backups/
 pcb/*.xml
 
 ## Etc.
