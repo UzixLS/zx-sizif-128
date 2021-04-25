@@ -57,6 +57,9 @@ localparam NTSC_CARRIER =
     (CLK_FREQ == 40_000_000)? 5865 :  // 166.91 error
     0;
 
+// localparam PAL_CARRIER  = 64'd17_734_475 * (1<<(CARRIER_WIDTH-1)) / CLK_FREQ;
+// localparam NTSC_CARRIER = 64'd14_318_180 * (1<<(CARRIER_WIDTH-1)) / CLK_FREQ;
+
 reg [CARRIER_WIDTH:0] carrier;
 wire [31:0] carrier_next;
 reg [3:0] burst_cnt;
