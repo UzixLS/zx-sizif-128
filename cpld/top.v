@@ -172,7 +172,7 @@ end
 
 
 /* PORT #7FFD */
-wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && xa[1] == 0 && xa[15] == 0 && xa[14] == 1;
+wire port_7ffd_cs = n_m1 == 1 && n_iorq0 == 0 && xa[1] == 0 && xa[15] == 0;
 reg [2:0] rambank;
 reg rombank, vbank, lock_7ffd;
 always @(posedge clk14 or negedge rst_n) begin
