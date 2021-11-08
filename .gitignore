@@ -1,10 +1,26 @@
+## Kicad
+*-lib-table
+*-cache
+*-rescue.lib
+*.sch-bak
+*.kicad_pcb-bak
+*.dcm
+*.kicad_prl
+pcb/**/*-backups/
+pcb/**/*.xml
+pcb/**/out/
+pcb.*/
+pcb/rev*~*/
+
+
 ## Quartus
-db/
-incremental_db/
-output/
-*.dpf
-*.cdf
-*.qws
+cpld/db/
+cpld/incremental_db/
+cpld/output/
+cpld/*.dpf
+cpld/*.cdf
+cpld/*.qws
+cpld.*/
 
 ## Testbench
 cpld_tb/ivl_vhdl_work/
@@ -15,20 +31,7 @@ cpld_tb/*.bin
 cpld_tb/*.mem
 cpld_tb.*/
 
-## Kicad
-*-lib-table
-*-cache
-*-rescue.lib
-*.sch-bak
-*.kicad_pcb-bak
-*.dcm
-*.kicad_prl
-pcb/**/*-backups/
-pcb/*.xml
-
 ## Etc.
-pcb/out/
 out/pinouts.docx
 *.bak
 *.*~
-top-old.v
