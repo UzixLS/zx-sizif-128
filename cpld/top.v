@@ -1,7 +1,7 @@
 module zx_ula(
 	input rst_n,
 	input clk14,
-	input clk16,
+	input clkpal,
 
 	output clkcpu,
 
@@ -42,7 +42,7 @@ module zx_ula(
 	output reg csync
 );
 
-wire [15:0] xa = {a15, a14, va[13:2], a1, a0}; // a1-va[1] and a0-va[0] may be swapped if fitter is cranky
+wire [15:0] xa = {a15, a14, va[13:2], va[1], va[0]}; // a1-va[1] and a0-va[0] may be swapped if fitter is cranky
 wire [7:0] xd = vd;
 
 reg screen_read;
@@ -206,17 +206,22 @@ assign ay_clk = hc[1];
 
 
 /* VIDEO */
-reg [2:0] chroma0;
-chroma_gen #(.CLK_FREQ(16_000_000)) chroma_gen1(
-	.cg_clock(clk16),
-	.cg_rgb({g,r,b}),
-	.cg_hsync(hsync1),
-	.cg_enable(1'b1),
-	.cg_pnsel(1'b0),
-	.cg_out(chroma0)
+wire chroma_carrier;
+wire [1:0] chroma0;
+chroma_gen #(.CLK_FREQ(28_375_000)) chroma_gen1(
+	.clk(clkpal),
+	.hsync(hsync1),
+	.en(1'b1),
+	.ntsc(1'b0),
+	.r(r),
+	.g(g),
+	.b(b),
+    .i(i),
+	.out_carrier(chroma_carrier),
+	.out(chroma0)
 );
-assign chroma[0] = chroma0[1]? chroma0[0] : 1'bz;
-assign chroma[1] = chroma0[2]? chroma0[0] : 1'bz;
+assign chroma[0] = chroma0[0]? chroma_carrier : 1'bz;
+assign chroma[1] = chroma0[1]? chroma_carrier : 1'bz;
 
 
 /* MEMORY CONTROLLER */

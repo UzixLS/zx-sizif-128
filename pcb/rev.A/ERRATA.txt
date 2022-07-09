@@ -6,4 +6,5 @@ To improve RGBI colour balance use these values:
 2. R42 10k
 3. R39 18k
 4. R46 15k
-5. R49 3.6k
+5. R49 2.4k
+6. R50 4.7k

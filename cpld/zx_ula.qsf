@@ -105,7 +105,7 @@ set_location_assignment PIN_16 -to a15
 set_global_assignment -name AUTO_RESOURCE_SHARING OFF
 set_global_assignment -name AUTO_LCELL_INSERTION OFF
 set_location_assignment PIN_9 -to csync
-set_location_assignment PIN_2 -to clk16
+set_location_assignment PIN_2 -to clkpal
 set_location_assignment PIN_11 -to chroma[1]
 set_location_assignment PIN_12 -to chroma[0]
 set_location_assignment PIN_33 -to kd[1]
@@ -118,8 +118,6 @@ set_location_assignment PIN_40 -to ay_bdir
 set_location_assignment PIN_41 -to ay_clk
 set_location_assignment PIN_79 -to tape_in
 set_location_assignment PIN_80 -to ra14
-set_global_assignment -name FMAX_REQUIREMENT "16 MHz" -section_id clk16
-set_instance_assignment -name CLOCK_SETTINGS clk16 -to clk16
 set_global_assignment -name BASED_ON_CLOCK_SETTINGS clk14 -section_id clkcpu
 set_global_assignment -name MULTIPLY_BASE_CLOCK_PERIOD_BY 2 -section_id clkcpu
 set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF

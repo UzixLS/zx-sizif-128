@@ -1,14 +1,18 @@
 // Based on Joerg Wolfram's code //
 
 module chroma_gen #(
-    parameter CLK_FREQ
+    parameter CLK_FREQ = 16_000_000
     ) (
-    input cg_clock,         // input clock
-    input cg_enable,        // colour enable
-    input cg_hsync,         // hor. sync
-    input cg_pnsel,         // system (pal/ntsc)
-    input [2:0] cg_rgb,     // rgb input
-    output reg [2:0] cg_out // chroma out
+    input clk,              // input clock
+    input en,               // colour enable
+    input hsync,            // hor. sync
+    input ntsc,             // system (pal/ntsc)
+    input r,                // rgbi input
+    input g,
+    input b,
+    input i,
+    output reg out_carrier, // chroma out
+    output reg [1:0] out
 );
 
 localparam CARRIER_WIDTH =
@@ -60,89 +64,103 @@ localparam NTSC_CARRIER =
 // localparam PAL_CARRIER  = 64'd17_734_475 * (1<<(CARRIER_WIDTH-1)) / CLK_FREQ;
 // localparam NTSC_CARRIER = 64'd14_318_180 * (1<<(CARRIER_WIDTH-1)) / CLK_FREQ;
 
-reg [CARRIER_WIDTH:0] carrier;
-wire [31:0] carrier_next;
-reg [3:0] burst_cnt;
-wire burst;
-reg oddeven;
-reg [3:0] phase;
-reg [3:0] scarrier;
-wire cenable;
-
 
 // DDS for PAL-carrier
-assign carrier_next = (cg_pnsel == 1'b0)?
+reg [CARRIER_WIDTH:0] carrier;
+wire [31:0] carrier_next = (!ntsc)?
         (carrier + PAL_CARRIER)  :
         (carrier + NTSC_CARRIER) ;
-
-always @(posedge cg_clock) begin
+always @(posedge clk) begin
     carrier <= carrier_next[CARRIER_WIDTH:0];
 end
 
+
 // burst generator
-always @(posedge carrier[CARRIER_WIDTH] or negedge cg_hsync) begin
-    if (cg_hsync == 1'b0)
+reg [3:0] burst_cnt;
+always @(posedge carrier[CARRIER_WIDTH] or negedge hsync) begin
+    if (hsync == 1'b0)
         burst_cnt <= 4'b0100;
     else if (burst_cnt != 4'b0000)
         burst_cnt <= burst_cnt + 1'b1;
 end
-assign burst = burst_cnt[3];
+wire burst = burst_cnt[3];
+
 
 // odd/even line
-always @(posedge cg_hsync) begin
-    if (cg_pnsel == 1'b0)
+reg oddeven;
+always @(posedge hsync) begin
+    if (!ntsc)
         oddeven <= ~oddeven;
     else
         oddeven <= 1'b0;
 end
 
 // carrier phase
+reg [3:0] phase;
 always @* begin
     if (burst == 1'b1) begin
-        if ((oddeven == 1'b0) && (cg_pnsel == 1'b0))
-            phase <= 4'b0110; // burst phase 135 deg
+        if ((oddeven == 1'b0) && (!ntsc))
+            phase <= 4'h6; // burst phase 135 deg
         else
-            phase <= 4'b1010; // burst phase -135 deg
+            phase <= 4'hA; // burst phase -135 deg
     end
     else if (oddeven == 1'b0) begin
-        case (cg_rgb)
-            3'b001:  phase <= 4'b0000; // blue phase
-            3'b010:  phase <= 4'b0101; // red phase
-            3'b011:  phase <= 4'b0011; // magenta phase
-            3'b100:  phase <= 4'b1011; // green phase
-            3'b101:  phase <= 4'b1101; // cyan phase
-            3'b110:  phase <= 4'b0111; // yellow phase
-            default: phase <= 4'b0000; // dummy function
+        case ({r,g,b})
+            3'b010:  phase <= 4'hB; // green
+            3'b011:  phase <= 4'hD; // cyan
+            3'b100:  phase <= 4'h5; // red
+            3'b101:  phase <= 4'h3; // magenta
+            3'b110:  phase <= 4'h7; // yellow
+            default: phase <= 4'hF; // blue
         endcase
     end
     else begin
-        case (cg_rgb)
-            3'b001:  phase <= 4'b0000; // blue phase
-            3'b010:  phase <= 4'b1011; // red phase
-            3'b011:  phase <= 4'b1101; // magenta phase
-            3'b100:  phase <= 4'b0101; // green phase
-            3'b101:  phase <= 4'b0011; // cyan phase
-            3'b110:  phase <= 4'b1001; // yellow phase
-            default: phase <= 4'b0000; // dummy function
+        case ({r,g,b})
+            3'b010:  phase <= 4'h5; // green
+            3'b011:  phase <= 4'h3; // cyan
+            3'b100:  phase <= 4'hB; // red
+            3'b101:  phase <= 4'hD; // magenta
+            3'b110:  phase <= 4'h9; // yellow
+            default: phase <= 4'h1; // blue
         endcase
     end
 end
 
+
+// carrier amplitude
+reg [1:0] amplitude;
+always @* begin
+    if (burst == 1'b1)
+        amplitude <= 2'b01;
+    else case ({i,r,g,b}) 
+        4'b0001: amplitude <= 2'b10;
+        4'b0010: amplitude <= 2'b10;
+        4'b0011: amplitude <= 2'b10;
+        4'b0100: amplitude <= 2'b10;
+        4'b0101: amplitude <= 2'b10;
+        4'b0110: amplitude <= 2'b10;
+        4'b1001: amplitude <= 2'b11;
+        4'b1010: amplitude <= 2'b11;
+        4'b1011: amplitude <= 2'b11;
+        4'b1100: amplitude <= 2'b11;
+        4'b1101: amplitude <= 2'b11;
+        4'b1110: amplitude <= 2'b11;
+        default: amplitude <= 2'b00;
+    endcase
+end
+
+
 // modulated carrier
+reg [3:0] scarrier;
 always @*
     scarrier <= carrier[CARRIER_WIDTH:CARRIER_WIDTH-3] + phase;
 
-// colour enable
-assign cenable =
-    cg_enable == 1'b1 &&
-    cg_rgb != 3'b000 &&
-    cg_rgb != 3'b111;
 
 // chroma signal
-always @(posedge cg_clock) begin
-    cg_out[2] <= cenable;
-    cg_out[1] <= burst;
-    cg_out[0] <= scarrier[3];
+always @(posedge clk) begin
+    out_carrier <= scarrier[3];
+    out[1] <= en && amplitude[1];
+    out[0] <= en && amplitude[0];
 end
 
 
