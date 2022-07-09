@@ -56,9 +56,9 @@ localparam SCREEN_DELAY   = 8;
 localparam H_TOTAL        = 448;
 localparam V_TOTAL        = 320;
 
-reg [$clog2(V_TOTAL)-1:0] vc;
-reg [$clog2(H_TOTAL):0] hc0;
-wire [$clog2(H_TOTAL)-1:0] hc = hc0[$bits(hc0)-1:1];
+reg [8:0] vc;
+reg [9:0] hc0;
+wire [8:0] hc = hc0[9:1];
 
 wire hc0_reset = hc0 == (H_TOTAL<<1) - 1'b1 ;
 wire vc_reset = vc == V_TOTAL - 1'b1 ;
@@ -79,7 +79,7 @@ always @(posedge clk14) begin
 end
 
 reg [4:0] blink_cnt;
-wire blink = blink_cnt[$bits(blink_cnt)-1];
+wire blink = blink_cnt[4];
 always @(posedge n_int) begin
 	blink_cnt <= blink_cnt + 1'b1;
 end
