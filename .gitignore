@@ -1,37 +1,35 @@
 ## Kicad
-*-lib-table
-*-cache
-*-rescue.lib
-*.sch-bak
-*.kicad_pcb-bak
-*.dcm
-*.kicad_prl
-pcb/**/*-backups/
-pcb/**/*.xml
-pcb/**/out/
-pcb.*/
-pcb/rev*~*/
-
+/pcb/**/*-lib-table
+/pcb/**/*-cache
+/pcb/**/*-rescue.lib
+/pcb/**/*.sch-bak
+/pcb/**/*.kicad_pcb-bak
+/pcb/**/*.kicad_prl
+/pcb/**/*.dcm
+/pcb/**/*.xml
+/pcb/**/*-backups/
+/pcb/**/out/
 
 ## Quartus
-cpld/db/
-cpld/incremental_db/
-cpld/output/
-cpld/*.dpf
-cpld/*.cdf
-cpld/*.qws
-cpld.*/
+/cpld/db/
+/cpld/incremental_db/
+/cpld/output/
+/cpld/*.dpf
+/cpld/*.cdf
+/cpld/*.qws
 
 ## Testbench
-cpld_tb/ivl_vhdl_work/
-cpld_tb/work/
-cpld_tb/*.gtkw
-cpld_tb/*.vcd
-cpld_tb/*.bin
-cpld_tb/*.mem
-cpld_tb.*/
+/cpld_tb/ivl_vhdl_work/
+/cpld_tb/work/
+/cpld_tb/*.gtkw
+/cpld_tb/*.vcd
+/cpld_tb/*.bin
+/cpld_tb/*.mem
 
 ## Etc.
-out/pinouts.docx
+/out/pinouts.docx
+/out/gerbers.rev.B.zip
+/out/gerbers.rev.C.zip
+/out/pcb3d.rev.B.webp
 *.bak
 *.*~
