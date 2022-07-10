@@ -1,0 +1,1 @@
+1. Y2 should be 28.375MHz or 16Mhz
