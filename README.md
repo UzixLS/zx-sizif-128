@@ -2,7 +2,7 @@
 
 Easy-to-build minimalistic ZX Spectrum clone.
 
-[![photo](images/revB.small.jpg)](images/revB.jpg?raw=true)
+[![photo](images/revC.small.webp)](images/revC.webp?raw=true)
 
 [(some random photos)](https://cloud.err200.net/index.php/s/73TR85tYZkMm8Ax?path=%2Fsizif-128)
 
