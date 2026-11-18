@@ -1,0 +1,6 @@
+/obj_dir/
+/out/
+__pycache__/
+*.vcd
+*.ppm
+*.ram

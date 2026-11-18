@@ -1,0 +1,4 @@
+`verilator_config
+// Several opcode terms read other bits of the same PLA output.
+// Schedule these bit dependencies separately to avoid a settle loop.
+split_var -module "Decoder" -var "pla"
